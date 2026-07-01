@@ -10,7 +10,7 @@ fn run_markql(args: &[&str], input: &str) -> String {
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
-        .current_dir("/root/workspace/markql")
+        .current_dir(env!("CARGO_MANIFEST_DIR"))
         .spawn()
         .expect("Failed to run markql");
 
@@ -107,7 +107,7 @@ fn test_file_input() {
         .arg(tmpfile.path())
         .arg("--format")
         .arg("count")
-        .current_dir("/root/workspace/markql")
+        .current_dir(env!("CARGO_MANIFEST_DIR"))
         .output()
         .expect("Failed to run markql");
 
