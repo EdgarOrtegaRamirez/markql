@@ -3,8 +3,13 @@ use crate::ast::Node;
 /// Markdown tokenizer that converts raw markdown text into a tree of AST nodes.
 /// Uses a line-by-line approach for block-level elements, then inline parsing
 /// for inline elements within blocks.
-
 pub struct Parser;
+
+impl Default for Parser {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Parser {
     pub fn new() -> Self {
@@ -57,7 +62,10 @@ impl Parser {
             }
 
             // Table: | ... |
-            if trimmed.starts_with('|') && i + 1 < lines.len() && lines[i + 1].trim().starts_with('|') {
+            if trimmed.starts_with('|')
+                && i + 1 < lines.len()
+                && lines[i + 1].trim().starts_with('|')
+            {
                 if let Some((table, lines_consumed)) = parse_table(&lines, i) {
                     nodes.push(table);
                     i += lines_consumed;
@@ -123,7 +131,11 @@ fn parse_code_block(lines: &[&str], start: usize) -> Option<(Node, usize)> {
     // Check if it's just the fence (opening with no content)
     let language = if line.len() > fence_len {
         let lang = line[fence_len..].trim();
-        if lang.is_empty() { None } else { Some(lang.to_string()) }
+        if lang.is_empty() {
+            None
+        } else {
+            Some(lang.to_string())
+        }
     } else {
         None
     };
@@ -162,8 +174,8 @@ fn parse_blockquote(lines: &[&str], start: usize) -> (Node, usize) {
 
     while i < lines.len() {
         let trimmed = lines[i].trim();
-        if trimmed.starts_with('>') {
-            let after = trimmed[1..].trim();
+        if let Some(stripped) = trimmed.strip_prefix('>') {
+            let after = stripped.trim();
             content_lines.push(after);
             i += 1;
         } else if !trimmed.is_empty() && !content_lines.is_empty() {
@@ -248,7 +260,10 @@ fn is_list_item(line: &str) -> bool {
 
 fn parse_list(lines: &[&str], start: usize) -> (Node, usize) {
     let first_line = lines[start].trim();
-    let ordered = first_line.chars().next().map_or(false, |c| c.is_ascii_digit());
+    let ordered = first_line
+        .chars()
+        .next()
+        .is_some_and(|c| c.is_ascii_digit());
 
     let mut items = Vec::new();
     let mut i = start;
@@ -262,7 +277,10 @@ fn parse_list(lines: &[&str], start: usize) -> (Node, usize) {
         let item_text = if ordered {
             let dot_pos = trimmed.find(". ").unwrap_or(0);
             &trimmed[dot_pos + 2..]
-        } else if trimmed.starts_with("- ") || trimmed.starts_with("* ") || trimmed.starts_with("+ ") {
+        } else if trimmed.starts_with("- ")
+            || trimmed.starts_with("* ")
+            || trimmed.starts_with("+ ")
+        {
             &trimmed[2..]
         } else {
             break;
@@ -401,7 +419,9 @@ pub fn parse_inline(text: &str) -> Vec<Node> {
         }
 
         // Strong: **text** or __text__
-        if i + 1 < len && (chars[i] == '*' && chars[i + 1] == '*' || chars[i] == '_' && chars[i + 1] == '_') {
+        if i + 1 < len
+            && (chars[i] == '*' && chars[i + 1] == '*' || chars[i] == '_' && chars[i + 1] == '_')
+        {
             if !current_text.is_empty() {
                 nodes.push(Node::Text(current_text.clone()));
                 current_text.clear();
@@ -583,7 +603,11 @@ mod tests {
     #[test]
     fn test_parse_inline_emphasis() {
         let nodes = parse_inline("This is *italic* and **bold**");
-        assert!(nodes.iter().any(|n| matches!(n, Node::Emphasis { strong: false, .. })));
-        assert!(nodes.iter().any(|n| matches!(n, Node::Emphasis { strong: true, .. })));
+        assert!(nodes
+            .iter()
+            .any(|n| matches!(n, Node::Emphasis { strong: false, .. })));
+        assert!(nodes
+            .iter()
+            .any(|n| matches!(n, Node::Emphasis { strong: true, .. })));
     }
 }

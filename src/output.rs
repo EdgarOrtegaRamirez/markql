@@ -13,7 +13,7 @@ pub enum OutputFormat {
 }
 
 impl OutputFormat {
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "json" => OutputFormat::Json,
             "markdown" | "md" => OutputFormat::Markdown,
@@ -171,7 +171,12 @@ fn node_to_markdown(node: &Node) -> String {
         }
         Node::Blockquote(children) => {
             let inner: Vec<String> = children.iter().map(node_to_markdown).collect();
-            inner.join("\n").lines().map(|l| format!("> {}", l)).collect::<Vec<_>>().join("\n")
+            inner
+                .join("\n")
+                .lines()
+                .map(|l| format!("> {}", l))
+                .collect::<Vec<_>>()
+                .join("\n")
         }
         Node::List { ordered, items } => items
             .iter()
@@ -205,11 +210,19 @@ fn node_to_markdown(node: &Node) -> String {
 }
 
 fn render_inline_markdown(nodes: &[Node]) -> String {
-    nodes.iter().map(node_to_markdown).collect::<Vec<_>>().join("")
+    nodes
+        .iter()
+        .map(node_to_markdown)
+        .collect::<Vec<_>>()
+        .join("")
 }
 
 fn format_text(results: &[MatchResult]) -> String {
-    results.iter().map(|r| r.node.text_content()).collect::<Vec<_>>().join("\n")
+    results
+        .iter()
+        .map(|r| r.node.text_content())
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 fn format_tree(results: &[MatchResult]) -> String {
@@ -234,10 +247,11 @@ fn format_tree_node(node: &Node, prefix: &str, is_last: bool) -> String {
         Node::Heading { level, .. } => {
             output.push_str(&format!("{}    level: {}\n", prefix, level));
         }
-        Node::CodeBlock { language, .. } => {
-            if let Some(lang) = language {
-                output.push_str(&format!("{}    lang: {}\n", prefix, lang));
-            }
+        Node::CodeBlock {
+            language: Some(lang),
+            ..
+        } => {
+            output.push_str(&format!("{}    lang: {}\n", prefix, lang));
         }
         Node::Link { url, .. } => {
             output.push_str(&format!("{}    url: {}\n", prefix, url));
@@ -254,7 +268,11 @@ fn format_tree_node(node: &Node, prefix: &str, is_last: bool) -> String {
     let children = node.children();
     for (i, child) in children.iter().enumerate() {
         let new_prefix = format!("{}{}", prefix, child_prefix);
-        output.push_str(&format_tree_node(child, &new_prefix, i == children.len() - 1));
+        output.push_str(&format_tree_node(
+            child,
+            &new_prefix,
+            i == children.len() - 1,
+        ));
     }
 
     output
@@ -269,7 +287,7 @@ mod tests {
         let parser = Parser::new();
         let ast = parser.parse(md);
         let results = crate::query::executor::execute_query(&ast, "heading").unwrap();
-        let fmt = OutputFormat::from_str(format);
+        let fmt = OutputFormat::parse(format);
         format_results(&results, &fmt, "heading")
     }
 

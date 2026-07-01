@@ -4,7 +4,7 @@ pub mod output;
 pub mod query;
 
 use ast::Node;
-use output::{OutputFormat, format_results};
+use output::{format_results, OutputFormat};
 use query::executor::{execute_query, MatchResult};
 
 /// Parse markdown text into an AST
@@ -26,7 +26,7 @@ pub fn query_markdown(markdown: &str, query_str: &str) -> Result<Vec<MatchResult
 
 /// Format query results into the specified output format
 pub fn format_results_str(results: &[MatchResult], format: &str, query_str: &str) -> String {
-    let fmt = OutputFormat::from_str(format);
+    let fmt = OutputFormat::parse(format);
     format_results(results, &fmt, query_str)
 }
 

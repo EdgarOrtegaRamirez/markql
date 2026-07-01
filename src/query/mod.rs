@@ -159,36 +159,39 @@ fn parse_selector(tokens: &[Token], pos: usize) -> Result<(Selector, usize), Str
 fn parse_combinator(
     tokens: &[Token],
     mut pos: usize,
-    left: Selector,
+    mut left: Selector,
 ) -> Result<(Selector, usize), String> {
-    while pos < tokens.len() {
+    loop {
+        if pos >= tokens.len() {
+            break;
+        }
         match &tokens[pos] {
             Token::Child => {
                 pos += 1;
                 let (right, new_pos) = parse_simple_selector(tokens, pos)?;
-                let combined = Selector::Child {
-                    parent: Box::new(left.clone()),
+                left = Selector::Child {
+                    parent: Box::new(left),
                     child: Box::new(right),
                 };
-                return parse_combinator(tokens, new_pos, combined);
+                pos = new_pos;
             }
             Token::Sibling => {
                 pos += 1;
                 let (right, new_pos) = parse_simple_selector(tokens, pos)?;
-                let combined = Selector::Sibling {
-                    before: Box::new(left.clone()),
+                left = Selector::Sibling {
+                    before: Box::new(left),
                     after: Box::new(right),
                 };
-                return parse_combinator(tokens, new_pos, combined);
+                pos = new_pos;
             }
             Token::Ident(_) => {
                 // Descendant combinator (implicit space)
                 let (right, new_pos) = parse_simple_selector(tokens, pos)?;
-                let combined = Selector::Descendant {
-                    ancestor: Box::new(left.clone()),
+                left = Selector::Descendant {
+                    ancestor: Box::new(left),
                     descendant: Box::new(right),
                 };
-                return parse_combinator(tokens, new_pos, combined);
+                pos = new_pos;
             }
             Token::Comma => {
                 // Multiple selectors

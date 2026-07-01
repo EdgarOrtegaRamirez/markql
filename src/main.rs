@@ -122,8 +122,9 @@ fn main() -> Result<()> {
 
 fn read_input(file: Option<&str>) -> Result<String> {
     match file {
-        Some(path) => fs::read_to_string(path)
-            .with_context(|| format!("Failed to read file: {}", path)),
+        Some(path) => {
+            fs::read_to_string(path).with_context(|| format!("Failed to read file: {}", path))
+        }
         None => {
             let mut input = String::new();
             io::stdin()
@@ -168,7 +169,7 @@ fn print_stats(node: &markql::ast::Node) {
     println!();
 
     let mut sorted: Vec<_> = counts.into_iter().collect();
-    sorted.sort_by(|a, b| b.1.cmp(&a.1));
+    sorted.sort_by_key(|b| std::cmp::Reverse(b.1));
 
     for (node_type, count) in &sorted {
         let bar = "█".repeat(*count.min(&50));

@@ -1,6 +1,6 @@
+use std::io::Write;
 use std::process::Command;
 use tempfile::NamedTempFile;
-use std::io::Write;
 
 fn run_markql(args: &[&str], input: &str) -> String {
     let mut child = Command::new("cargo")
@@ -33,7 +33,10 @@ fn test_query_headings_from_stdin() {
 #[test]
 fn test_query_code_blocks_from_stdin() {
     let input = "```python\nprint('hello')\n```\n\n```rust\nfn main() {}\n```";
-    let output = run_markql(&["query", "code_block[lang=python]", "--format", "json"], input);
+    let output = run_markql(
+        &["query", "code_block[lang=python]", "--format", "json"],
+        input,
+    );
     assert!(output.contains("\"python\""));
 }
 
@@ -54,14 +57,20 @@ fn test_query_heading_level() {
 #[test]
 fn test_query_contains() {
     let input = "# Hello World\n\n## Goodbye World";
-    let output = run_markql(&["query", "heading[contains(\"Hello\")]", "--format", "count"], input);
+    let output = run_markql(
+        &["query", "heading[contains(\"Hello\")]", "--format", "count"],
+        input,
+    );
     assert_eq!(output.trim(), "1");
 }
 
 #[test]
 fn test_query_multi_type() {
     let input = "# Heading\n\nParagraph\n\n```code```";
-    let output = run_markql(&["query", "heading, code_block", "--format", "count"], input);
+    let output = run_markql(
+        &["query", "heading, code_block", "--format", "count"],
+        input,
+    );
     assert_eq!(output.trim(), "2");
 }
 
@@ -88,7 +97,7 @@ fn test_types_output() {
 fn test_file_input() {
     let mut tmpfile = NamedTempFile::new().unwrap();
     writeln!(tmpfile, "# Title\n\n## Subtitle").unwrap();
-    
+
     let output = Command::new("cargo")
         .arg("run")
         .arg("--")
@@ -101,7 +110,7 @@ fn test_file_input() {
         .current_dir("/root/workspace/markql")
         .output()
         .expect("Failed to run markql");
-    
+
     assert_eq!(String::from_utf8(output.stdout).unwrap().trim(), "2");
 }
 
@@ -117,13 +126,19 @@ fn test_json_output_is_valid_json() {
 #[test]
 fn test_child_combinator() {
     let input = "- **bold item**\n- normal";
-    let output = run_markql(&["query", "list_item > emphasis", "--format", "count"], input);
+    let output = run_markql(
+        &["query", "list_item > emphasis", "--format", "count"],
+        input,
+    );
     assert_eq!(output.trim(), "1");
 }
 
 #[test]
 fn test_descendant_combinator() {
     let input = "> This is **bold** text";
-    let output = run_markql(&["query", "blockquote emphasis", "--format", "count"], input);
+    let output = run_markql(
+        &["query", "blockquote emphasis", "--format", "count"],
+        input,
+    );
     assert_eq!(output.trim(), "1");
 }
