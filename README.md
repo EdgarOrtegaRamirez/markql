@@ -96,6 +96,16 @@ markql query 'heading + paragraph'
 markql query 'heading, code_block, link'
 ```
 
+### Pseudo-Selectors
+
+```bash
+# First list item only
+markql query 'list_item:first_child'
+
+# Combined with attribute filter
+markql query 'heading:first_child[level=1]'
+```
+
 ## Output Formats
 
 ### JSON

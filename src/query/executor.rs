@@ -77,13 +77,34 @@ fn execute_selector(
                 execute_selector(child, selector, results, new_path);
             }
         }
+        Selector::FirstChild(inner) => {
+            let is_first = !path.is_empty() && *path.last().unwrap() == 0;
+            if is_first && node_matches(node, inner.as_ref()) {
+                let depth = path.len();
+                results.push(MatchResult {
+                    node: node.clone(),
+                    path: path.clone(),
+                    depth,
+                });
+            }
+            for (i, child) in node.children().iter().enumerate() {
+                let mut new_path = path.clone();
+                new_path.push(i);
+                execute_selector(
+                    child,
+                    &Selector::FirstChild(inner.clone()),
+                    results,
+                    new_path,
+                );
+            }
+        }
         Selector::Child { parent, child } => {
             let mut parent_results = Vec::new();
             execute_selector(node, parent, &mut parent_results, path.clone());
             for parent_match in &parent_results {
                 let parent_node = &parent_match.node;
                 for (i, child_node) in parent_node.children().iter().enumerate() {
-                    if node_matches(child_node, child) {
+                    if node_matches_with_idx(child_node, child, i) {
                         let mut new_path = parent_match.path.clone();
                         new_path.push(i);
                         let depth = new_path.len();
@@ -112,7 +133,7 @@ fn execute_selector(
             let mut prev_matched = false;
             for (i, child) in children.iter().enumerate() {
                 if prev_matched {
-                    if node_matches(child, after) {
+                    if node_matches_with_idx(child, after, i) {
                         let mut new_path = path.clone();
                         new_path.push(i);
                         let depth = new_path.len();
@@ -124,7 +145,7 @@ fn execute_selector(
                     }
                     prev_matched = false;
                 }
-                if node_matches(child, before) {
+                if node_matches_with_idx(child, before, i) {
                     prev_matched = true;
                 }
             }
@@ -144,7 +165,7 @@ fn collect_descendants(
     base_path: &[usize],
 ) {
     for (i, child) in node.children().iter().enumerate() {
-        if node_matches(child, selector) {
+        if node_matches_with_idx(child, selector, i) {
             let mut new_path = base_path.to_vec();
             new_path.push(i);
             let depth = new_path.len();
@@ -157,6 +178,13 @@ fn collect_descendants(
         let mut p = base_path.to_vec();
         p.push(i);
         collect_descendants(child, selector, results, &p);
+    }
+}
+
+fn node_matches_with_idx(node: &Node, selector: &Selector, index: usize) -> bool {
+    match selector {
+        Selector::FirstChild(inner) => index == 0 && node_matches(node, inner.as_ref()),
+        _ => node_matches(node, selector),
     }
 }
 
@@ -256,5 +284,25 @@ mod tests {
     fn test_no_matches() {
         let results = parse_and_query("# Title\n\nText", "table");
         assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_first_child() {
+        // First list item should match, second should not
+        let results = parse_and_query(
+            "- first item\n- second item\n- third item",
+            "list_item:first_child",
+        );
+        assert_eq!(results.len(), 1);
+    }
+
+    #[test]
+    fn test_first_child_not_matching() {
+        // Each list has its own first child
+        let results = parse_and_query(
+            "- first item\n- second item\n\n- only item",
+            "list_item:first_child",
+        );
+        assert_eq!(results.len(), 2); // "first item" and "only item"
     }
 }

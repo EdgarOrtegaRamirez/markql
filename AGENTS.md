@@ -33,6 +33,7 @@ cargo test -- --nocapture  # verbose output
 - `blockquote emphasis` — descendants
 - `heading + paragraph` — next sibling
 - `heading, code_block` — multiple types
+- `list_item:first_child` — first child of parent
 
 ## Node Types
 `heading`, `paragraph`, `code_block`, `inline_code`, `blockquote`, `list`, `list_item`, `link`, `image`, `emphasis`, `thematic_break`, `table`, `text`, `document`
@@ -52,5 +53,5 @@ cargo test -- --nocapture  # verbose output
 ## Next Steps
 - Add more attribute operators (`^=`, `$=`, `~=`)
 - Support regex patterns in contains()
-- Add `:first-child`, `:last-child` pseudo-selectors
+- Add `:last-child` pseudo-selector
 - Improve error messages for invalid queries

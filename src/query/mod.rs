@@ -23,6 +23,8 @@ pub enum Token {
     Comma,
     /// End of input
     Eof,
+    /// Pseudo-selector colon
+    Colon,
 }
 
 /// Lex a query string into tokens
@@ -59,6 +61,10 @@ pub fn lex_query(input: &str) -> Result<Vec<Token>, String> {
             }
             ',' => {
                 tokens.push(Token::Comma);
+                i += 1;
+            }
+            ':' => {
+                tokens.push(Token::Colon);
                 i += 1;
             }
             '=' => {
@@ -124,6 +130,8 @@ pub enum Selector {
     },
     /// Match with contains filter
     WithContains { node_type: String, text: String },
+    /// First-child pseudo-selector: :first-child
+    FirstChild(Box<Selector>),
     /// Child combinator: parent > child
     Child {
         parent: Box<Selector>,
@@ -227,6 +235,21 @@ fn parse_simple_selector(tokens: &[Token], pos: usize) -> Result<(Selector, usiz
         _ => return Err(format!("Expected node type, got {:?}", tokens[pos])),
     };
     let mut pos = pos + 1;
+
+    // Check for pseudo-selector: :first-child
+    if pos < tokens.len() && tokens[pos] == Token::Colon {
+        pos += 1;
+        if pos < tokens.len() {
+            if let Token::Ident(key) = &tokens[pos] {
+                if key == "first_child" {
+                    pos += 1;
+                    return Ok((Selector::FirstChild(Box::new(Selector::Type(node_type))), pos));
+                }
+            }
+            return Err(format!("Expected pseudo-selector name after ':', got {:?}", tokens[pos]));
+        }
+        return Err("Expected pseudo-selector name after ':'".to_string());
+    }
 
     // Check for attribute filter: [key=value] or [contains("text")]
     if pos < tokens.len() && tokens[pos] == Token::LBracket {
